@@ -33,10 +33,10 @@ const PaymentSchedule: React.FC<PaymentScheduleProps> = ({ payoffPlan }) => {
                   {step.month}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                  ${step.total_payment.toFixed(2)}
+                  ${(step.total_payment || 0).toFixed(2)}
                 </td>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
-                  ${step.remaining_debt.toFixed(2)}
+                  ${(step.remaining_debt || 0).toFixed(2)}
                 </td>
               </tr>
             ))}

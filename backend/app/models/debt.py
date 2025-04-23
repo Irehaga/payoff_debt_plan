@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, validator
 from typing import List, Literal, Optional
 from decimal import Decimal
 from uuid import uuid4
+from datetime import datetime
 
 class CreditCard(BaseModel):
     id: Optional[str] = None
@@ -65,3 +66,18 @@ class DebtPayoffResponse(BaseModel):
         json_encoders = {
             Decimal: lambda v: float(v)
         }
+
+
+class PaymentCreate(BaseModel):
+    amount: Decimal = Field(gt=0)
+    credit_card_id: int
+    interest_portion: Decimal
+    principal_portion: Decimal
+
+class Payment(PaymentCreate):
+    id: int
+    payment_date: datetime
+    user_id: int
+
+    class Config:
+        orm_mode = True
