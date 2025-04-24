@@ -10,6 +10,7 @@ import { Trash2 } from "lucide-react";
 export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [cards, setCards] = useState<CreditCard[]>([]);
+  const [cardTotals, setCardTotals] = useState<Record<number, number>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
@@ -29,6 +30,14 @@ export default function PaymentsPage() {
         ]);
         setPayments(paymentsData);
         setCards(cardsData);
+        
+        // Calculate total payments per card
+        const totals = paymentsData.reduce((acc: Record<number, number>, payment: Payment) => {
+          const cardId = payment.credit_card_id;
+          acc[cardId] = (acc[cardId] || 0) + payment.amount;
+          return acc;
+        }, {});
+        setCardTotals(totals);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError('Failed to load your payment history');
@@ -80,60 +89,40 @@ export default function PaymentsPage() {
               </p>
             </div>
           ) : (
-            <div className="bg-white shadow-md rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Card
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Principal
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Interest
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {payments.map((payment) => (
-                    <tr key={payment.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatDate(payment.payment_date)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {cardMap[payment.credit_card_id] || `Card #${payment.credit_card_id}`}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${payment.amount.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${payment.principal_portion.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        ${payment.interest_portion.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <button
-                          onClick={() => handleDeletePayment(payment.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-5 w-5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-2xl font-bold mb-4">Payment History</h2>
+              <div className="space-y-4">
+                {payments.map((payment) => (
+                  <div key={payment.id} className="border-b pb-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold">
+                          {cardMap[payment.credit_card_id] || `Card #${payment.credit_card_id}`}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(payment.payment_date)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-green-600">
+                          ${payment.amount.toFixed(2)}
+                        </p>
+                        <div className="text-sm text-gray-500">
+                          <p>Principal: ${payment.principal_portion.toFixed(2)}</p>
+                          <p>Interest: ${payment.interest_portion.toFixed(2)}</p>
+                          <p>Total paid: ${cardTotals[payment.credit_card_id]?.toFixed(2) || '0.00'}</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeletePayment(payment.id!)}
+                        className="text-red-600 hover:text-red-900 ml-4"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

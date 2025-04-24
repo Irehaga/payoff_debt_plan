@@ -55,7 +55,7 @@ export default function DashboardPage() {
   const handleRemoveCard = async (id: string | number) => {
     try {
       await api.deleteCreditCard(Number(id));
-      setCreditCards(creditCards.filter(card => card.id !== id));
+      setCreditCards(creditCards.filter(card => String(card.id) === String(id)));
     } catch (err) {
       console.error('Error removing card:', err);
       setError('Failed to remove credit card');

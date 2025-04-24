@@ -1,13 +1,16 @@
-# Credit Card Debt Payoff Planner
+# Debt Payoff Planner
 
-A web application that helps users plan and track their credit card debt payoff journey using avalanche or snowball methods.
+A comprehensive web application that helps users manage their finances, track expenses, and plan credit card debt payoff strategies.
 
 ## Features
 
 - User authentication and account management
 - Add and manage multiple credit cards
+- Track daily expenses with categorization (cash/credit card)
 - Calculate debt payoff schedules using avalanche or snowball methods
 - Track payment history and progress
+- Monthly and weekly expense tracking
+- Total payments tracking per credit card
 - Visualize debt reduction over time
 - Secure API backend with FastAPI
 - Responsive frontend with Next.js and Tailwind CSS
@@ -15,22 +18,23 @@ A web application that helps users plan and track their credit card debt payoff 
 ## Tech Stack
 
 ### Backend
-- Python 3.8+
+- Python 3.13+
 - FastAPI
 - SQLAlchemy ORM
 - JWT Authentication
+- SQLite Database
 
 ### Frontend
-- Next.js (React)
+- Next.js 14 (React)
 - TypeScript
 - Tailwind CSS
-- Recharts for data visualization
+- Axios for API calls
 
 ## Getting Started
 
 ### Prerequisites
-- Python 3.8+
-- Node.js 14+
+- Python 3.13+
+- Node.js 18+
 - npm or yarn
 
 ### Setup Backend
@@ -39,18 +43,21 @@ A web application that helps users plan and track their credit card debt payoff 
 cd backend
 
 # Create virtual environment
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements.txt
 
 # Initialize the database
-python -m app.init_db
+python3 -m app.init_db
 
 # Start the server
-uvicorn app.main:app --reload
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
 
+### Setup Frontend
+```bash
 # Navigate to frontend directory
 cd frontend
 
@@ -59,28 +66,35 @@ npm install
 
 # Start the development server
 npm run dev
-
+```
 
 The application will be available at:
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
 
-Frontend: http://localhost:3000
-Backend API: http://localhost:8000
-API Documentation: http://localhost:8000/docs
+## Features in Detail
 
-Project Structure
+### Expense Tracking
+- Add expenses with description, amount, and date
+- Categorize expenses as cash or credit card
+- View monthly and weekly expense totals
+- Track current balance
 
-backend/: FastAPI backend application
+### Credit Card Management
+- Add multiple credit cards with balances and interest rates
+- Track total payments per card
+- View payment history with running totals
+- Delete credit cards and associated expenses
 
-app/: Application code
+### Payment Planning
+- Choose between avalanche or snowball payoff methods
+- Calculate optimal payment schedule
+- Track payment progress
+- Visualize debt reduction over time
 
-models/: Data models
-routes/: API endpoints
-services/: Business logic
-
-
-
-frontend/: Next.js frontend application
-
-src/app/: Pages and routes
-src/components/: Reusable components
-src/lib/: Utilities and types
+## Security
+- JWT-based authentication
+- Password hashing with bcrypt
+- Protected API routes
+- Secure session management

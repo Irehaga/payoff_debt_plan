@@ -18,6 +18,7 @@ interface Expense {
     interest_rate: number;
     min_payment: number;
   };
+  balance_type: string;
 }
 
 interface CreditCard {
@@ -32,11 +33,15 @@ export default function ExpensesPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [currentBalance, setCurrentBalance] = useState<number>(0);
   const [creditCards, setCreditCards] = useState<CreditCard[]>([]);
-  const [newExpense, setNewExpense] = useState<Expense>({
+  const [monthlyTotal, setMonthlyTotal] = useState<number>(0);
+  const [weeklyTotal, setWeeklyTotal] = useState<number>(0);
+  const [totalPayments, setTotalPayments] = useState<number>(0);
+  const [newExpense, setNewExpense] = useState({
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    credit_card_id: undefined
+    credit_card_id: undefined as number | undefined,
+    balance_type: 'cash'
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,11 +58,43 @@ export default function ExpensesPage() {
     fetchCreditCards();
   }, []);
 
+  const calculateTotals = (expenses: Expense[]) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+
+    const monthlyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfMonth;
+    });
+
+    const weeklyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfWeek;
+    });
+
+    const monthlyTotal = monthlyExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+    
+    const weeklyTotal = weeklyExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+
+    setMonthlyTotal(monthlyTotal);
+    setWeeklyTotal(weeklyTotal);
+  };
+
   const fetchExpenses = async () => {
     try {
       const response = await api.getUserExpenses();
       setExpenses(response.expenses);
-      setCurrentBalance(response.currentBalance);
+      setCurrentBalance(Number(response.currentBalance));
+      calculateTotals(response.expenses);
+      
+      // Fetch total payments
+      const payments = await api.getUserPayments();
+      const totalPaid = payments.reduce((sum: number, payment: { amount: number }) => sum + payment.amount, 0);
+      setTotalPayments(totalPaid);
     } catch (err) {
       setError('Failed to load expenses');
       console.error(err);
@@ -82,7 +119,8 @@ export default function ExpensesPage() {
         description: newExpense.description,
         amount: parseFloat(newExpense.amount as string) || 0,
         date: newExpense.date,
-        credit_card_id: newExpense.credit_card_id
+        credit_card_id: newExpense.balance_type === 'credit_card' ? newExpense.credit_card_id : undefined,
+        balance_type: newExpense.balance_type
       });
       
       // Update the credit cards list with the new balance
@@ -98,7 +136,8 @@ export default function ExpensesPage() {
         description: '',
         amount: '',
         date: new Date().toISOString().split('T')[0],
-        credit_card_id: undefined
+        credit_card_id: undefined,
+        balance_type: 'cash'
       });
       setCurrentBalance(response.currentBalance);
       fetchExpenses();
@@ -204,63 +243,110 @@ export default function ExpensesPage() {
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-2xl font-bold mb-4">Current Balance</h2>
             <p className="text-3xl font-semibold text-gray-800">
-              ${currentBalance.toFixed(2)}
+              ${(currentBalance || 0).toFixed(2)}
             </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Monthly Expenses</h2>
+              <p className="text-2xl font-semibold text-red-600">
+                ${monthlyTotal.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Total expenses for {new Date().toLocaleString('default', { month: 'long' })}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Weekly Expenses</h2>
+              <p className="text-2xl font-semibold text-red-600">
+                ${weeklyTotal.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Total expenses for this week
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Total Payments</h2>
+              <p className="text-2xl font-semibold text-green-600">
+                ${totalPayments.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Total paid to credit cards
+              </p>
+            </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-2xl font-bold mb-4">Add New Expense</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
-                <input
-                  type="text"
-                  value={newExpense.description}
-                  onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Amount</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  value={newExpense.amount}
-                  onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Date</label>
-                <input
-                  type="date"
-                  value={newExpense.date}
-                  onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Credit Card</label>
-                <select
-                  value={newExpense.credit_card_id || ''}
-                  onChange={(e) => setNewExpense({ ...newExpense, credit_card_id: e.target.value ? parseInt(e.target.value) : undefined })}
-                  className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
-                >
-                  <option value="">No Credit Card</option>
-                  {creditCards.map((card) => (
-                    <option key={card.id} value={card.id}>
-                      {card.name} (${card.balance.toFixed(2)})
-                    </option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Description</label>
+                  <input
+                    type="text"
+                    value={newExpense.description}
+                    onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Amount</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={newExpense.amount}
+                    onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <input
+                    type="date"
+                    value={newExpense.date}
+                    onChange={(e) => setNewExpense({ ...newExpense, date: e.target.value })}
+                    className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                    required
+                  />
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Balance Type
+                  </label>
+                  <select
+                    value={newExpense.balance_type}
+                    onChange={(e) => setNewExpense({ ...newExpense, balance_type: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="cash">Cash</option>
+                    <option value="credit_card">Credit Card</option>
+                  </select>
+                </div>
+                {newExpense.balance_type === 'credit_card' && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Credit Card</label>
+                    <select
+                      value={newExpense.credit_card_id}
+                      onChange={(e) => setNewExpense({ ...newExpense, credit_card_id: Number(e.target.value) })}
+                      className="mt-1 block w-full rounded-md border-2 border-gray-300 bg-gray-50 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2"
+                      required
+                    >
+                      <option value="">Select a card</option>
+                      {creditCards.map(card => (
+                        <option key={card.id} value={card.id}>
+                          {card.name} (${card.balance.toFixed(2)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="mt-4 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Add Expense
               </button>

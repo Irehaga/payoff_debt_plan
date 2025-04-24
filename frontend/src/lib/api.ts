@@ -168,15 +168,14 @@ class ApiClient {
     return response.data;
   }
 
-  async addExpense(expense: { description: string; amount: number; date: string; credit_card_id?: number }) {
-    const response = await this.client.post('/expenses', null, {
-      params: {
-        description: expense.description,
-        amount: expense.amount,
-        date: expense.date,
-        credit_card_id: expense.credit_card_id
-      }
-    });
+  async addExpense(expense: {
+    description: string;
+    amount: number;
+    date: string;
+    credit_card_id?: number;
+    balance_type: string;
+  }) {
+    const response = await this.client.post('/expenses/expenses', expense);
     return response.data;
   }
 
@@ -194,6 +193,17 @@ class ApiClient {
     const response = await this.client.post('/expenses/balance', null, {
       params: { balance }
     });
+    return response.data;
+  }
+
+  async createExpense(expense: {
+    description: string;
+    amount: number;
+    date: string;
+    credit_card_id?: number;
+    balance_type: string;
+  }) {
+    const response = await this.client.post('/expenses', expense);
     return response.data;
   }
 }

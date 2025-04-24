@@ -6,6 +6,7 @@ from app.services.auth import get_current_user
 from typing import List
 from decimal import Decimal
 from datetime import datetime
+from app.schemas import ExpenseCreate
 
 router = APIRouter(prefix="/expenses", tags=["expenses"])
 
@@ -62,70 +63,26 @@ async def get_user_expenses(
         "currentBalance": current_balance
     }
 
-@router.post("", status_code=201)
+@router.post("/expenses")
 async def create_expense(
-    description: str,
-    amount: float,
-    date: str,
-    credit_card_id: int = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    expense: ExpenseCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
-    try:
-        expense_date = datetime.fromisoformat(date)
-    except ValueError:
-        raise HTTPException(status_code=400, detail="Invalid date format")
+    if expense.balance_type == "credit_card" and not expense.credit_card_id:
+        raise HTTPException(status_code=400, detail="Credit card ID is required for credit card expenses")
     
-    # Verify credit card belongs to user if provided
-    updated_card = None
-    if credit_card_id:
-        card = db.query(CreditCard).filter(
-            CreditCard.id == credit_card_id,
-            CreditCard.user_id == current_user.id
-        ).first()
-        if not card:
-            raise HTTPException(status_code=404, detail="Credit card not found")
-        
-        # Update credit card balance
-        card.balance += amount
-        db.add(card)
-        db.flush()  # Flush to get the updated card data
-        updated_card = {
-            "id": card.id,
-            "name": card.name,
-            "balance": card.balance,
-            "interest_rate": card.interest_rate,
-            "min_payment": card.min_payment
-        }
-    
-    expense = Expense(
-        description=description,
-        amount=amount,
-        date=expense_date,
-        user_id=current_user.id,
-        credit_card_id=credit_card_id
+    db_expense = Expense(
+        description=expense.description,
+        amount=expense.amount,
+        date=expense.date,
+        credit_card_id=expense.credit_card_id if expense.balance_type == "credit_card" else None,
+        user_id=current_user.id
     )
-    
-    db.add(expense)
+    db.add(db_expense)
     db.commit()
-    db.refresh(expense)
-    
-    # Recalculate current balance
-    user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
-    initial_balance = user_balance.balance if user_balance else Decimal("0")
-    expenses = db.query(Expense).filter(Expense.user_id == current_user.id).all()
-    total_expenses = sum(expense.amount for expense in expenses)
-    current_balance = initial_balance - total_expenses
-    
-    return {
-        "id": expense.id,
-        "description": expense.description,
-        "amount": expense.amount,
-        "date": expense.date.isoformat(),
-        "credit_card_id": expense.credit_card_id,
-        "currentBalance": current_balance,
-        "updatedCard": updated_card
-    }
+    db.refresh(db_expense)
+    return db_expense
 
 @router.delete("/{expense_id}")
 async def delete_expense(
