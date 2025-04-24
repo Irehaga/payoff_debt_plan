@@ -10,9 +10,9 @@ interface BalanceChartProps {
 
 const BalanceChart: React.FC<BalanceChartProps> = ({ payoffPlan }) => {
   // Prepare chart data
-  const chartData = payoffPlan.payment_schedule.map(step => ({
-    month: step.month,
-    balance: step.remaining_debt,
+  const chartData = payoffPlan.monthly_breakdown.map(month => ({
+    month: month.month,
+    balance: month.payments.reduce((total, payment) => total + payment.new_balance, 0),
   }));
 
   return (
