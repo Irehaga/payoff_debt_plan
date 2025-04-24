@@ -27,7 +27,7 @@ const PaymentSchedule: React.FC<PaymentScheduleProps> = ({ payoffPlan }) => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {payoffPlan.payment_schedule.map(step => (
+            {payoffPlan.monthly_breakdown.map(step => (
               <tr key={step.month}>
                 <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                   {step.month}
