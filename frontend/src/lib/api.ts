@@ -158,8 +158,13 @@ class ApiClient {
   }
 
   async deleteCreditCard(id: number) {
-    const response = await this.client.delete(`/debt/cards/${id}`);
-    return response.data;
+    try {
+      const response = await this.client.delete(`/debt/cards/${Number(id)}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting credit card:', error);
+      throw error;
+    }
   }
 
   // Payment methods
