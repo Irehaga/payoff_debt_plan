@@ -4,7 +4,7 @@ import { CreditCard, DebtPayoffResponse } from '@/lib/types';
 
 type PaymentStrategy = 'avalanche' | 'snowball';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = 'https://payoff-debt-plan.onrender.com';
 
 class ApiClient {
   private client: AxiosInstance;
