@@ -65,5 +65,5 @@ export interface Payment {
   credit_card_id: number;
   interest_portion: number;
   principal_portion: number;
-  date: string;
+  payment_date: string;
 }
