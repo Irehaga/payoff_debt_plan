@@ -4,7 +4,7 @@ import { CreditCard, DebtPayoffResponse, Expense, Payment } from './types';
 
 type PaymentStrategy = 'avalanche' | 'snowball';
 
-const API_URL = 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 class ApiClient {
   private client: AxiosInstance;
