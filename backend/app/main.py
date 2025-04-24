@@ -12,8 +12,8 @@ app = FastAPI(
 
 # Configure CORS
 origins = [
-    "http://localhost:3000", 
-    "https://your-production-domain.com",
+    "http://localhost:3000",
+    "https://payoff-debt-plan.vercel.app",
 ]
 
 app.add_middleware(
