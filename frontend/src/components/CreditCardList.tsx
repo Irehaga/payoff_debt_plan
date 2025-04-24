@@ -5,7 +5,7 @@ import { CreditCard } from '@/lib/types';
 
 interface CreditCardListProps {
   creditCards: CreditCard[];
-  onRemoveCard: (id: string) => void;
+  onRemoveCard: (id: string | number) => void;
 }
 
 const CreditCardList: React.FC<CreditCardListProps> = ({ creditCards, onRemoveCard }) => {
@@ -54,7 +54,7 @@ const CreditCardList: React.FC<CreditCardListProps> = ({ creditCards, onRemoveCa
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => onRemoveCard(card.id!.toString())}
+                    onClick={() => onRemoveCard(card.id!)}
                     className="text-red-600 hover:text-red-900"
                   >
                     Remove

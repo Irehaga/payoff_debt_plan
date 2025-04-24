@@ -54,11 +54,15 @@ export default function DashboardPage() {
   // Remove a credit card
   const handleRemoveCard = async (id: string | number) => {
     try {
-      await api.deleteCreditCard(Number(id));
-      setCreditCards(creditCards.filter(card => card.id !== id));
+      const numericId = Number(id);
+      await api.deleteCreditCard(numericId);
+      setCreditCards(prevCards => prevCards.filter(card => card.id !== numericId));
+      setError(null);
+      // Clear payoff plan since it's no longer valid
+      setPayoffPlan(null);
     } catch (err) {
       console.error('Error removing card:', err);
-      setError('Failed to remove credit card');
+      setError('Failed to remove credit card. Please try again.');
     }
   };
 
