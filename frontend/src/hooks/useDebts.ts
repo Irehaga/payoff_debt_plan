@@ -14,13 +14,13 @@ export default function useDebts() {
   const addCreditCard = (card: Omit<CreditCard, 'id'>) => {
     const newCard: CreditCard = {
       ...card,
-      id: Date.now().toString(),
+      id: Date.now(),
     };
     setCreditCards([...creditCards, newCard]);
   };
 
   // Remove a credit card
-  const removeCreditCard = (id: string) => {
+  const removeCreditCard = (id: number) => {
     setCreditCards(creditCards.filter(card => card.id !== id));
   };
 
