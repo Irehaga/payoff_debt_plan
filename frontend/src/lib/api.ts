@@ -87,10 +87,19 @@ class ApiClient {
     monthlyPayment: number
   ): Promise<DebtPayoffResponse> {
     try {
+      // Convert numbers to strings for proper Decimal handling
+      const formattedCards = creditCards.map(card => ({
+        id: card.id?.toString() || undefined,
+        name: card.name,
+        balance: card.balance.toString(),
+        interest_rate: card.interest_rate.toString(),
+        min_payment: card.min_payment.toString()
+      }));
+
       const response = await this.client.post<DebtPayoffResponse>('/debt/calculate', {
-        credit_cards: creditCards,
+        credit_cards: formattedCards,
         strategy,
-        monthly_payment: monthlyPayment,
+        monthly_payment: monthlyPayment.toString()
       });
       return response.data;
     } catch (error) {
@@ -106,7 +115,14 @@ class ApiClient {
   }
 
   async addCreditCard(card: Omit<CreditCard, 'id'>) {
-    const response = await this.client.post('/debt/cards', card);
+    const response = await this.client.post('/debt/cards', null, {
+      params: {
+        name: card.name,
+        balance: card.balance,
+        interest_rate: card.interest_rate,
+        min_payment: card.min_payment
+      }
+    });
     return response.data;
   }
 
