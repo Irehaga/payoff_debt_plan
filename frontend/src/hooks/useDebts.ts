@@ -11,17 +11,25 @@ export default function useDebts() {
   const [error, setError] = useState<string | null>(null);
 
   // Add a new credit card
-  const addCreditCard = (card: Omit<CreditCard, 'id'>) => {
-    const newCard: CreditCard = {
-      ...card,
-      id: Date.now(),
-    };
-    setCreditCards([...creditCards, newCard]);
+  const addCreditCard = async (card: Omit<CreditCard, 'id'>) => {
+    try {
+      const result = await api.addCreditCard(card);
+      setCreditCards([...creditCards, result]);
+    } catch (error) {
+      console.error('Error adding credit card:', error);
+      setError('Failed to add credit card');
+    }
   };
 
   // Remove a credit card
-  const removeCreditCard = (id: number) => {
-    setCreditCards(creditCards.filter(card => card.id !== id));
+  const removeCreditCard = async (id: number) => {
+    try {
+      await api.deleteCreditCard(id);
+      setCreditCards(creditCards.filter(card => card.id !== id));
+    } catch (error) {
+      console.error('Error removing credit card:', error);
+      setError('Failed to remove credit card');
+    }
   };
 
   // Calculate total minimum payment
