@@ -5,7 +5,7 @@ from uuid import uuid4
 from datetime import datetime
 
 class CreditCard(BaseModel):
-    id: Optional[str] = None
+    id: Optional[int] = None
     name: str
     balance: Decimal = Field(gt=0)
     interest_rate: Decimal = Field(gt=0)
@@ -35,7 +35,7 @@ class DebtPayoffRequest(BaseModel):
         return v
 
 class CardPayment(BaseModel):
-    card_id: str
+    card_id: int
     card_name: str
     payment: Decimal
     interest_paid: Decimal
@@ -61,7 +61,7 @@ class DebtPayoffResponse(BaseModel):
     total_months: int
     total_interest_paid: Decimal
     total_amount_paid: Decimal
-    payment_schedule: List[PaymentStep]
+    monthly_breakdown: List[PaymentStep]
     
     class Config:
         json_encoders = {

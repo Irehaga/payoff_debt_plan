@@ -118,7 +118,7 @@ export default function ExpensesPage() {
       const response = await api.addExpense({
         description: newExpense.description,
         amount: parseFloat(newExpense.amount as string) || 0,
-        date: newExpense.date,
+        date: new Date(newExpense.date).toISOString(),
         credit_card_id: newExpense.balance_type === 'credit_card' ? newExpense.credit_card_id : undefined,
         balance_type: newExpense.balance_type
       });

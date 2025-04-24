@@ -12,7 +12,7 @@ const BalanceChart: React.FC<BalanceChartProps> = ({ payoffPlan }) => {
   // Prepare chart data
   const chartData = payoffPlan.monthly_breakdown.map(month => ({
     month: month.month,
-    balance: month.payments.reduce((total, payment) => total + payment.new_balance, 0),
+    balance: month.card_payments.reduce((total: number, payment: { remaining_balance: number }) => total + payment.remaining_balance, 0),
   }));
 
   return (

@@ -1,10 +1,10 @@
 // src/lib/api.ts
 import axios, { AxiosInstance } from 'axios';
-import { CreditCard, DebtPayoffResponse } from '@/lib/types';
+import { CreditCard, DebtPayoffResponse, Expense, Payment } from './types';
 
 type PaymentStrategy = 'avalanche' | 'snowball';
 
-const API_URL = 'https://payoff-debt-plan.onrender.com';
+const API_URL = 'http://localhost:8000';
 
 class ApiClient {
   private client: AxiosInstance;
@@ -33,26 +33,61 @@ class ApiClient {
     formData.append('username', email);
     formData.append('password', password);
     
-    const response = await this.client.post('/token', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    
-    const { access_token } = response.data;
-    
-    // Store token in localStorage
-    localStorage.setItem('token', access_token);
-    
-    return response.data;
+    try {
+      const response = await this.client.post('/token', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      const { access_token } = response.data;
+      localStorage.setItem('token', access_token);
+      
+      // Get user data after successful login
+      const userData = await this.getCurrentUser();
+      return { success: true, user: userData };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error };
+    }
   }
 
   async register(email: string, password: string) {
-    const response = await this.client.post('/register', {
-      email,
-      password,
-    });
-    return response.data;
+    try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      // Validate password
+      if (password.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
+      }
+
+      // Make the registration request
+      const response = await this.client.post('/register', {
+        email: email.toLowerCase().trim(),
+        password: password.trim(),
+      });
+
+      if (response.status === 200) {
+        // After successful registration, log the user in
+        const loginResult = await this.login(email, password);
+        return loginResult;
+      }
+
+      return { success: false, error: response.data.detail || 'Registration failed' };
+    } catch (error) {
+      console.error('Registration error:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        return { 
+          success: false, 
+          error: error.response.data.detail || 'Registration failed. Please check your input.' 
+        };
+      }
+      return { success: false, error };
+    }
   }
 
   async logout() {
@@ -60,8 +95,13 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    const response = await this.client.get('/users/me');
-    return response.data;
+    try {
+      const response = await this.client.get('/users/me');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting current user:', error);
+      throw error;
+    }
   }
 
   isAuthenticated() {
@@ -166,7 +206,11 @@ class ApiClient {
     credit_card_id?: number;
     balance_type: string;
   }) {
-    const response = await this.client.post('/expenses/expenses', expense);
+    const formattedExpense = {
+      ...expense,
+      date: new Date(expense.date).toISOString()
+    };
+    const response = await this.client.post('/expenses/expenses', formattedExpense);
     return response.data;
   }
 
@@ -202,10 +246,3 @@ class ApiClient {
 // Export as singleton
 const api = new ApiClient();
 export default api;
-
-const handleError = (error: unknown): never => {
-  if (error instanceof Error) {
-    throw new Error(error.message);
-  }
-  throw new Error('An unknown error occurred');
-};

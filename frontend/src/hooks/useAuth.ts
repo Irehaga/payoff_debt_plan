@@ -6,6 +6,7 @@ import { User } from '@/lib/types';
 export default function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   // Check if user is logged in on mount
@@ -28,28 +29,42 @@ export default function useAuth() {
   }, []);
 
   const login = async (email: string, password: string) => {
+    setError(null);
     try {
-      await api.login(email, password);
-      const userData = await api.getCurrentUser();
-      setUser(userData);
-      return true;
+      const result = await api.login(email, password);
+      if (result.success) {
+        setUser(result.user);
+        router.push('/dashboard');
+        return true;
+      }
+      setError('Login failed');
+      return false;
     } catch (error) {
       console.error('Login error:', error);
+      setError('An error occurred during login');
       return false;
     }
   };
 
   const register = async (email: string, password: string) => {
+    setError(null);
     try {
-      await api.register(email, password);
-      return true;
+      const result = await api.register(email, password);
+      if (result.success) {
+        router.push('/dashboard');
+        return true;
+      }
+      setError(result.error || 'Registration failed');
+      return false;
     } catch (error) {
       console.error('Registration error:', error);
+      setError('An error occurred during registration');
       return false;
     }
   };
 
   const logout = async () => {
+    setError(null);
     await api.logout();
     setUser(null);
     router.push('/login');
@@ -58,6 +73,7 @@ export default function useAuth() {
   return {
     user,
     loading,
+    error,
     login,
     register,
     logout,

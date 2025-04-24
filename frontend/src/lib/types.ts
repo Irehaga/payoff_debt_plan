@@ -1,6 +1,6 @@
 // src/lib/types.ts
 export interface CreditCard {
-  id?: number;
+  id: number;
   name: string;
   balance: number;
   interest_rate: number;
@@ -10,7 +10,7 @@ export interface CreditCard {
 export type PaymentStrategy = 'avalanche' | 'snowball';
 
 export interface CardPayment {
-  card_id: string;
+  card_id: number;
   card_name: string;
   payment: number;
   interest_paid: number;
@@ -26,18 +26,9 @@ export interface PaymentStep {
 
 export interface DebtPayoffResponse {
   total_months: number;
-  total_interest: number;
-  total_payment: number;
-  monthly_breakdown: Array<{
-    month: number;
-    payments: Array<{
-      card_id: number;
-      payment: number;
-      interest: number;
-      principal: number;
-      new_balance: number;
-    }>;
-  }>;
+  total_interest_paid: number;
+  total_amount_paid: number;
+  monthly_breakdown: PaymentStep[];
 }
 
 export interface User {
@@ -56,14 +47,16 @@ export interface Expense {
   amount: number;
   date: string;
   credit_card_id?: number;
-  balance_type: string;
+  credit_card?: CreditCard;
+  balance_type: 'cash' | 'credit_card';
 }
 
 export interface Payment {
   id: number;
   amount: number;
+  payment_date: string;
   credit_card_id: number;
   interest_portion: number;
   principal_portion: number;
-  payment_date: string;
+  user_id: number;
 }
