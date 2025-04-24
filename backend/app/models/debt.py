@@ -19,6 +19,7 @@ class CreditCard(BaseModel):
         json_encoders = {
             Decimal: lambda v: float(v)
         }
+        from_attributes = True
 
 class DebtPayoffRequest(BaseModel):
     credit_cards: List[CreditCard]
@@ -80,4 +81,4 @@ class Payment(PaymentCreate):
     user_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True

@@ -157,6 +157,45 @@ class ApiClient {
     const response = await this.client.get(`/payments/cards/${cardId}`);
     return response.data;
   }
+
+  async deletePayment(paymentId: number): Promise<void> {
+    await this.client.delete(`/payments/${paymentId}`);
+  }
+
+  // Expense methods
+  async getUserExpenses() {
+    const response = await this.client.get('/expenses');
+    return response.data;
+  }
+
+  async addExpense(expense: { description: string; amount: number; date: string; credit_card_id?: number }) {
+    const response = await this.client.post('/expenses', null, {
+      params: {
+        description: expense.description,
+        amount: expense.amount,
+        date: expense.date,
+        credit_card_id: expense.credit_card_id
+      }
+    });
+    return response.data;
+  }
+
+  async deleteExpense(id: number) {
+    try {
+      const response = await this.client.delete(`/expenses/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error('Delete expense error:', error);
+      throw error;
+    }
+  }
+
+  async setInitialBalance(balance: number) {
+    const response = await this.client.post('/expenses/balance', null, {
+      params: { balance }
+    });
+    return response.data;
+  }
 }
 
 // Export as singleton

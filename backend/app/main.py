@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from app.routes import debt, auth, payments
+from app.routes import debt, auth, payments, expenses
 
 app = FastAPI(
     title="Debt Payoff Planner API",
@@ -28,6 +28,7 @@ app.add_middleware(
 app.include_router(debt.router)
 app.include_router(auth.router)
 app.include_router(payments.router)
+app.include_router(expenses.router)
 
 @app.get("/")
 async def root():

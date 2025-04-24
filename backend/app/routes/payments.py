@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.debt import PaymentCreate, Payment
-from app.models.db_models import Payment as DBPayment, CreditCard
+from app.models.db_models import Payment as DBPayment, CreditCard, User
 from app.services.auth import get_current_user
 from datetime import datetime
 from typing import List
@@ -83,3 +83,37 @@ async def get_card_payments(
     ).order_by(DBPayment.payment_date.desc()).all()
     
     return payments
+
+@router.delete("/{payment_id}")
+async def delete_payment(
+    payment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    payment = db.query(DBPayment).filter(
+        DBPayment.id == payment_id,
+        DBPayment.user_id == current_user.id
+    ).first()
+    
+    if not payment:
+        raise HTTPException(
+            status_code=404,
+            detail="Payment not found"
+        )
+    
+    # Get the associated credit card
+    card = db.query(CreditCard).filter(
+        CreditCard.id == payment.credit_card_id,
+        CreditCard.user_id == current_user.id
+    ).first()
+    
+    if card:
+        # Add the payment amount back to the card balance
+        card.balance += payment.amount
+        db.add(card)
+    
+    # Delete the payment
+    db.delete(payment)
+    db.commit()
+    
+    return {"message": "Payment deleted successfully"}
