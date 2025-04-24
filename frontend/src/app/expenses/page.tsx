@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import api from '@/lib/api';
@@ -48,12 +48,7 @@ export default function ExpensesPage() {
     type: 'add'
   });
 
-  useEffect(() => {
-    fetchExpenses();
-    fetchCreditCards();
-  }, []);
-
-  const fetchExpenses = async () => {
+  const fetchExpenses = useCallback(async () => {
     try {
       const response = await api.getUserExpenses();
       setExpenses(response.expenses);
@@ -64,16 +59,21 @@ export default function ExpensesPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const fetchCreditCards = async () => {
+  const fetchCreditCards = useCallback(async () => {
     try {
       const cards = await api.getUserCards();
       setCreditCards(cards);
     } catch (err) {
       console.error('Failed to fetch credit cards:', err);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+    fetchCreditCards();
+  }, [fetchExpenses, fetchCreditCards]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
