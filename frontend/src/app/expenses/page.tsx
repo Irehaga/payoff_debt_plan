@@ -53,37 +53,6 @@ export default function ExpensesPage() {
     type: 'add'
   });
 
-  useEffect(() => {
-    fetchExpenses();
-    fetchCreditCards();
-  }, []);
-
-  const calculateTotals = (expenses: Expense[]) => {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
-
-    const monthlyExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate >= startOfMonth;
-    });
-
-    const weeklyExpenses = expenses.filter(expense => {
-      const expenseDate = new Date(expense.date);
-      return expenseDate >= startOfWeek;
-    });
-
-    const monthlyTotal = monthlyExpenses.reduce((sum, expense) => 
-      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
-    
-    const weeklyTotal = weeklyExpenses.reduce((sum, expense) => 
-      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
-
-    setMonthlyTotal(monthlyTotal);
-    setWeeklyTotal(weeklyTotal);
-  };
-
   const fetchExpenses = async () => {
     try {
       const response = await api.getUserExpenses();
@@ -110,6 +79,37 @@ export default function ExpensesPage() {
     } catch (err) {
       console.error('Failed to fetch credit cards:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchExpenses();
+    fetchCreditCards();
+  }, [fetchExpenses, fetchCreditCards]);
+
+  const calculateTotals = (expenses: Expense[]) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+
+    const monthlyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfMonth;
+    });
+
+    const weeklyExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfWeek;
+    });
+
+    const monthlyTotal = monthlyExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+    
+    const weeklyTotal = weeklyExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+
+    setMonthlyTotal(monthlyTotal);
+    setWeeklyTotal(weeklyTotal);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

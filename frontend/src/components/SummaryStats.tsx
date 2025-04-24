@@ -49,7 +49,7 @@ const SummaryStats: React.FC<SummaryStatsProps> = ({ payoffPlan }) => {
       <div>
         <h3 className="font-medium text-gray-700 mb-2">Money Saved</h3>
         <p className="text-lg">
-          By using this strategy, you'll pay off your debt in {payoffPlan.total_months} months and save on interest!
+          By using this strategy, you&apos;ll pay off your debt in {payoffPlan.total_months} months and save on interest!
         </p>
       </div>
     </div>

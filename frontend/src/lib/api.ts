@@ -1,6 +1,8 @@
 // src/lib/api.ts
 import axios, { AxiosInstance } from 'axios';
-import { CreditCard, PaymentStrategy, DebtPayoffResponse, Payment } from './types';
+import { CreditCard, DebtPayoffResponse } from '@/lib/types';
+
+type PaymentStrategy = 'avalanche' | 'snowball';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -15,25 +17,14 @@ class ApiClient {
       },
     });
 
-    // Add auth token to requests if user is logged in
-    this.client.interceptors.request.use(
-      (config) => {
-        // Skip auth for login/register endpoints
-        if (config.url?.includes('/token') || config.url?.includes('/register')) {
-          return config;
-        }
-        
-        // Add token from localStorage if available
-        if (typeof window !== 'undefined') {
-          const token = localStorage.getItem('token');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
-        }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+    // Add token to requests if it exists
+    this.client.interceptors.request.use((config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
   }
 
   // Auth methods
@@ -211,3 +202,10 @@ class ApiClient {
 // Export as singleton
 const api = new ApiClient();
 export default api;
+
+const handleError = (error: unknown): never => {
+  if (error instanceof Error) {
+    throw new Error(error.message);
+  }
+  throw new Error('An unknown error occurred');
+};
