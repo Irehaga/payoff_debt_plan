@@ -12,10 +12,14 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/balance")
 async def set_initial_balance(
-    balance: float,
+    balance_data: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    balance = balance_data.get("balance")
+    if balance is None:
+        raise HTTPException(status_code=400, detail="Balance is required")
+    
     # Check if user already has a balance record
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     
@@ -41,7 +45,8 @@ async def get_user_expenses(
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     initial_balance = user_balance.balance if user_balance else Decimal("0")
     
-    total_expenses = sum(expense.amount for expense in expenses)
+    # Only include cash expenses (where credit_card_id is None) in the total
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
     current_balance = initial_balance - total_expenses
     
     # Get all credit cards for the user
@@ -72,7 +77,27 @@ async def create_expense(
     if expense.balance_type == "credit_card" and not expense.credit_card_id:
         raise HTTPException(status_code=400, detail="Credit card ID is required for credit card expenses")
     
-    # Create the expense record
+    # If it's a credit card expense, update the card's balance
+    updated_card = None
+    if expense.balance_type == "credit_card" and expense.credit_card_id:
+        card = db.query(CreditCard).filter(
+            CreditCard.id == expense.credit_card_id,
+            CreditCard.user_id == current_user.id
+        ).first()
+        if card:
+            # Convert expense amount to float before addition
+            expense_amount = float(expense.amount)
+            card.balance += expense_amount
+            db.add(card)
+            db.flush()  # Flush to get the updated card data
+            updated_card = {
+                "id": card.id,
+                "name": card.name,
+                "balance": card.balance,
+                "interest_rate": card.interest_rate,
+                "min_payment": card.min_payment
+            }
+    
     db_expense = Expense(
         description=expense.description,
         amount=expense.amount,
@@ -81,35 +106,21 @@ async def create_expense(
         user_id=current_user.id
     )
     db.add(db_expense)
-    
-    # If it's a credit card expense, update the credit card balance
-    if expense.balance_type == "credit_card":
-        card = db.query(CreditCard).filter(
-            CreditCard.id == expense.credit_card_id,
-            CreditCard.user_id == current_user.id
-        ).first()
-        
-        if not card:
-            raise HTTPException(status_code=404, detail="Credit card not found")
-            
-        # Update credit card balance
-        card.balance += float(expense.amount)
-        db.add(card)
-    
-    # If it's a cash expense, update the user's cash balance
-    if expense.balance_type == "cash":
-        user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
-        if not user_balance:
-            user_balance = UserBalance(user_id=current_user.id, balance=0)
-            db.add(user_balance)
-        
-        # Update cash balance
-        user_balance.balance -= float(expense.amount)
-        db.add(user_balance)
-    
     db.commit()
     db.refresh(db_expense)
-    return db_expense
+    
+    # Get current balance (only for cash expenses)
+    user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
+    initial_balance = user_balance.balance if user_balance else Decimal("0")
+    expenses = db.query(Expense).filter(Expense.user_id == current_user.id).all()
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
+    current_balance = initial_balance - total_expenses
+    
+    return {
+        "expense": db_expense,
+        "currentBalance": current_balance,
+        "updatedCard": updated_card
+    }
 
 @router.delete("/{expense_id}")
 async def delete_expense(
@@ -152,15 +163,30 @@ async def delete_expense(
     db.delete(expense)
     db.commit()
     
-    # Recalculate current balance
+    # Recalculate current balance (only including cash expenses)
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     initial_balance = user_balance.balance if user_balance else Decimal("0")
     expenses = db.query(Expense).filter(Expense.user_id == current_user.id).all()
-    total_expenses = sum(expense.amount for expense in expenses)
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
     current_balance = initial_balance - total_expenses
     
     return {
         "message": "Expense deleted successfully",
         "currentBalance": current_balance,
         "updatedCard": updated_card
-    } 
+    }
+
+@router.delete("/balance")
+async def delete_balance(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    # Find and delete the user's balance record
+    user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
+    
+    if user_balance:
+        db.delete(user_balance)
+        db.commit()
+        return {"message": "Balance deleted successfully"}
+    else:
+        raise HTTPException(status_code=404, detail="No balance record found") 

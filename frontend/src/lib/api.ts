@@ -157,9 +157,9 @@ class ApiClient {
     return response.data;
   }
 
-  async deleteCreditCard(id: number) {
+  async deleteCreditCard(id: string | number) {
     try {
-      const response = await this.client.delete(`/debt/cards/${Number(id)}`);
+      const response = await this.client.delete(`/debt/cards/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting credit card:', error);
@@ -230,10 +230,15 @@ class ApiClient {
   }
 
   async setInitialBalance(balance: number) {
-    const response = await this.client.post('/expenses/balance', null, {
-      params: { balance }
-    });
-    return response.data;
+    try {
+      const response = await this.client.post('/expenses/balance', {
+        balance: balance
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Set initial balance error:', error);
+      throw error;
+    }
   }
 
   async createExpense(expense: {
@@ -245,6 +250,16 @@ class ApiClient {
   }) {
     const response = await this.client.post('/expenses', expense);
     return response.data;
+  }
+
+  async deleteBalance() {
+    try {
+      const response = await this.client.delete('/expenses/balance');
+      return response.data;
+    } catch (error) {
+      console.error('Delete balance error:', error);
+      throw error;
+    }
   }
 }
 
