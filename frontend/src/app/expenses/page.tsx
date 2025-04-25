@@ -188,21 +188,6 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleDeleteBalance = async () => {
-    try {
-      const response = await api.deleteBalance();
-      setCurrentBalance(0);
-      setError(null);
-    } catch (err: any) {
-      console.error('Delete balance error:', err);
-      if (err.response) {
-        setError(`Failed to delete balance: ${err.response.data.detail || 'Unknown error'}`);
-      } else {
-        setError('Failed to delete balance: Network error');
-      }
-    }
-  };
-
   return (
     <ProtectedRoute>
       <Layout>
@@ -265,14 +250,6 @@ export default function ExpensesPage() {
                   ${(currentBalance || 0).toFixed(2)}
                 </p>
               </div>
-              {currentBalance > 0 && (
-                <button
-                  onClick={handleDeleteBalance}
-                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                >
-                  Delete Balance
-                </button>
-              )}
             </div>
           </div>
 

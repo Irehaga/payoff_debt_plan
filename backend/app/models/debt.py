@@ -71,7 +71,7 @@ class DebtPayoffResponse(BaseModel):
 
 class PaymentCreate(BaseModel):
     amount: Decimal = Field(gt=0)
-    credit_card_id: int
+    credit_card_id: Optional[int] = None
     interest_portion: Decimal
     principal_portion: Decimal
 

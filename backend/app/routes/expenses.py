@@ -174,25 +174,4 @@ async def delete_expense(
         "message": "Expense deleted successfully",
         "currentBalance": current_balance,
         "updatedCard": updated_card
-    }
-
-@router.delete("/balance")
-async def delete_balance(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    try:
-        # Find and delete the user's balance record
-        user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
-        
-        if user_balance:
-            db.delete(user_balance)
-            db.commit()
-            return {"message": "Balance deleted successfully"}
-        else:
-            raise HTTPException(status_code=404, detail="No balance record found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete balance: {str(e)}") 
+    } 

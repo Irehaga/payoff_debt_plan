@@ -251,16 +251,6 @@ class ApiClient {
     const response = await this.client.post('/expenses', expense);
     return response.data;
   }
-
-  async deleteBalance() {
-    try {
-      const response = await this.client.delete('/expenses/balance');
-      return response.data;
-    } catch (error) {
-      console.error('Delete balance error:', error);
-      throw error;
-    }
-  }
 }
 
 // Export as singleton
