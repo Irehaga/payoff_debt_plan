@@ -55,7 +55,7 @@ def calculate_debt_payoff(
     month = 0
     total_interest_paid = Decimal("0")
     total_amount_paid = Decimal("0")
-    payment_schedule = []
+    monthly_breakdown = []
     
     # Continue until all cards are paid off
     while any(card["balance"] > Decimal("0") for card in cards):
@@ -126,8 +126,8 @@ def calculate_debt_payoff(
             if payment_remaining <= Decimal("0"):
                 break
         
-        # Add to payment schedule
-        payment_schedule.append(PaymentStep(
+        # Add to monthly breakdown
+        monthly_breakdown.append(PaymentStep(
             month=month,
             card_payments=card_payments,
             total_payment=monthly_payment - payment_remaining,
@@ -138,5 +138,5 @@ def calculate_debt_payoff(
         total_months=month,
         total_interest_paid=total_interest_paid,
         total_amount_paid=total_amount_paid,
-        payment_schedule=payment_schedule
+        monthly_breakdown=monthly_breakdown
     )
