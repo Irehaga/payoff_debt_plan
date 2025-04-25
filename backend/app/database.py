@@ -4,19 +4,14 @@ from sqlalchemy.orm import sessionmaker
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file if it exists (for local development)
+if os.path.exists('.env'):
+    load_dotenv()
 
-# Get database URL from environment variable (for production) or use local configuration
+# Get database URL from environment variable
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    # Local development configuration
-    POSTGRES_USER = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
-    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
-    POSTGRES_DB = os.getenv("POSTGRES_DB", "debt_planner")
-    DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DB}"
+    raise ValueError("DATABASE_URL environment variable is not set")
 
 # Create SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
