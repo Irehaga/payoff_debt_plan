@@ -54,13 +54,9 @@ export default function DashboardPage() {
   // Remove a credit card
   const handleRemoveCard = async (id: string | number) => {
     try {
-      const numericId = Number(id);
-      await api.deleteCreditCard(numericId);
+      await api.deleteCreditCard(id);
       // Update the state using the previous state to ensure we have the latest data
-      setCreditCards(prevCards => {
-        const updatedCards = prevCards.filter(card => card.id !== numericId);
-        return updatedCards;
-      });
+      setCreditCards(prevCards => prevCards.filter(card => card.id !== id));
       // Clear payoff plan since it's no longer valid
       setPayoffPlan(null);
       setError(null);
