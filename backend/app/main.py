@@ -10,19 +10,13 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
-origins = [
-    "http://localhost:3000",
-    "https://payoff-debt-plan.vercel.app",
-]
-
+# Configure CORS - Allow all origins for now
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://payoff-debt-plan.vercel.app"],
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
 # Include routers
