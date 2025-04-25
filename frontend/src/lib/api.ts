@@ -254,7 +254,7 @@ class ApiClient {
 
   async deleteBalance() {
     try {
-      const response = await this.client.delete('/balance');
+      const response = await this.client.delete('/expenses/balance');
       return response.data;
     } catch (error) {
       console.error('Delete balance error:', error);
