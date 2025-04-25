@@ -188,6 +188,17 @@ export default function ExpensesPage() {
     }
   };
 
+  const handleDeleteBalance = async () => {
+    try {
+      await api.deleteBalance();
+      setCurrentBalance(0);
+      setError(null);
+    } catch (err) {
+      setError('Failed to delete balance');
+      console.error(err);
+    }
+  };
+
   return (
     <ProtectedRoute>
       <Layout>
@@ -230,14 +241,30 @@ export default function ExpensesPage() {
                     <span className="ml-2 text-sm text-gray-700">Subtract</span>
                   </label>
                 </div>
-                <button
-                  type="submit"
-                  className="mt-6 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Update Balance
-                </button>
+                <div className="flex items-end">
+                  <button
+                    type="submit"
+                    className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  >
+                    Update
+                  </button>
+                </div>
               </div>
             </form>
+            <div className="mt-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">Current Balance</p>
+                <p className="text-2xl font-bold">${currentBalance.toFixed(2)}</p>
+              </div>
+              {currentBalance > 0 && (
+                <button
+                  onClick={handleDeleteBalance}
+                  className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                >
+                  Delete Balance
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">

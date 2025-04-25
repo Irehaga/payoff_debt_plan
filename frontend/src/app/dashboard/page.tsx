@@ -11,7 +11,6 @@ import CreditCardList from '@/components/CreditCardList';
 import PaymentSchedule from '@/components/PaymentSchedule';
 import BalanceChart from '@/components/BalanceChart';
 import ProgressDashboard from '@/components/ProgressDashboard';
-import CurrentBalance from '@/components/CurrentBalance';
 import api from '@/lib/api';
 import { CreditCard, PaymentStrategy, DebtPayoffResponse } from '@/lib/types';
 
@@ -23,7 +22,6 @@ export default function DashboardPage() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentBalance, setCurrentBalance] = useState<number>(0);
 
   // Fetch user's credit cards on component mount
   useEffect(() => {
@@ -101,12 +99,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleBalanceChange = (newBalance: number) => {
-    // Update any necessary state when balance changes
-    // For example, you might want to refresh the expenses list
-    setCurrentBalance(newBalance);
-  };
-
   return (
     <ProtectedRoute>
       <Layout>
@@ -118,10 +110,6 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div className="mb-8">
-                <CurrentBalance 
-                  balance={currentBalance} 
-                  onBalanceChange={handleBalanceChange} 
-                />
                 <ProgressDashboard />
                 <CreditCardForm onAddCard={handleAddCard} />
                 <CreditCardList 
