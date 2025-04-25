@@ -190,12 +190,16 @@ export default function ExpensesPage() {
 
   const handleDeleteBalance = async () => {
     try {
-      await api.deleteBalance();
+      const response = await api.deleteBalance();
       setCurrentBalance(0);
       setError(null);
-    } catch (err) {
-      setError('Failed to delete balance');
-      console.error(err);
+    } catch (err: any) {
+      console.error('Delete balance error:', err);
+      if (err.response) {
+        setError(`Failed to delete balance: ${err.response.data.detail || 'Unknown error'}`);
+      } else {
+        setError('Failed to delete balance: Network error');
+      }
     }
   };
 
