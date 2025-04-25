@@ -41,7 +41,8 @@ async def get_user_expenses(
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     initial_balance = user_balance.balance if user_balance else Decimal("0")
     
-    total_expenses = sum(expense.amount for expense in expenses)
+    # Only include cash expenses (where credit_card_id is None) in the total
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
     current_balance = initial_balance - total_expenses
     
     # Get all credit cards for the user
@@ -125,11 +126,11 @@ async def delete_expense(
     db.delete(expense)
     db.commit()
     
-    # Recalculate current balance
+    # Recalculate current balance (only including cash expenses)
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     initial_balance = user_balance.balance if user_balance else Decimal("0")
     expenses = db.query(Expense).filter(Expense.user_id == current_user.id).all()
-    total_expenses = sum(expense.amount for expense in expenses)
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
     current_balance = initial_balance - total_expenses
     
     return {
