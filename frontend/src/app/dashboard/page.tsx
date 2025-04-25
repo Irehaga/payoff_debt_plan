@@ -44,7 +44,7 @@ export default function DashboardPage() {
   const handleAddCard = async (card: Omit<CreditCard, 'id'>) => {
     try {
       const newCard = await api.addCreditCard(card);
-      setCreditCards([...creditCards, newCard]);
+      setCreditCards(prevCards => [...prevCards, newCard]);
     } catch (err) {
       console.error('Error adding card:', err);
       setError('Failed to add credit card');
@@ -56,10 +56,14 @@ export default function DashboardPage() {
     try {
       const numericId = Number(id);
       await api.deleteCreditCard(numericId);
-      setCreditCards(prevCards => prevCards.filter(card => card.id !== numericId));
-      setError(null);
+      // Update the state using the previous state to ensure we have the latest data
+      setCreditCards(prevCards => {
+        const updatedCards = prevCards.filter(card => card.id !== numericId);
+        return updatedCards;
+      });
       // Clear payoff plan since it's no longer valid
       setPayoffPlan(null);
+      setError(null);
     } catch (err) {
       console.error('Error removing card:', err);
       setError('Failed to remove credit card. Please try again.');
