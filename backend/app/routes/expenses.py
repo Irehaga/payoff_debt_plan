@@ -72,6 +72,7 @@ async def create_expense(
     if expense.balance_type == "credit_card" and not expense.credit_card_id:
         raise HTTPException(status_code=400, detail="Credit card ID is required for credit card expenses")
     
+    # Create the expense record
     db_expense = Expense(
         description=expense.description,
         amount=expense.amount,
@@ -80,6 +81,32 @@ async def create_expense(
         user_id=current_user.id
     )
     db.add(db_expense)
+    
+    # If it's a credit card expense, update the credit card balance
+    if expense.balance_type == "credit_card":
+        card = db.query(CreditCard).filter(
+            CreditCard.id == expense.credit_card_id,
+            CreditCard.user_id == current_user.id
+        ).first()
+        
+        if not card:
+            raise HTTPException(status_code=404, detail="Credit card not found")
+            
+        # Update credit card balance
+        card.balance += float(expense.amount)
+        db.add(card)
+    
+    # If it's a cash expense, update the user's cash balance
+    if expense.balance_type == "cash":
+        user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
+        if not user_balance:
+            user_balance = UserBalance(user_id=current_user.id, balance=0)
+            db.add(user_balance)
+        
+        # Update cash balance
+        user_balance.balance -= float(expense.amount)
+        db.add(user_balance)
+    
     db.commit()
     db.refresh(db_expense)
     return db_expense
