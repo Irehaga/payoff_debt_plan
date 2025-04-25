@@ -191,6 +191,8 @@ async def delete_balance(
             return {"message": "Balance deleted successfully"}
         else:
             raise HTTPException(status_code=404, detail="No balance record found")
+    except HTTPException:
+        raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=422, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=f"Failed to delete balance: {str(e)}") 
