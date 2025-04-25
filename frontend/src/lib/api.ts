@@ -230,10 +230,15 @@ class ApiClient {
   }
 
   async setInitialBalance(balance: number) {
-    const response = await this.client.post('/expenses/balance', null, {
-      params: { balance }
-    });
-    return response.data;
+    try {
+      const response = await this.client.post('/expenses/balance', {
+        balance: balance
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Set initial balance error:', error);
+      throw error;
+    }
   }
 
   async createExpense(expense: {

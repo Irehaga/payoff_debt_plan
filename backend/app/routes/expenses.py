@@ -12,10 +12,14 @@ router = APIRouter(prefix="/expenses", tags=["expenses"])
 
 @router.post("/balance")
 async def set_initial_balance(
-    balance: float,
+    balance_data: dict,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    balance = balance_data.get("balance")
+    if balance is None:
+        raise HTTPException(status_code=400, detail="Balance is required")
+    
     # Check if user already has a balance record
     user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
     
