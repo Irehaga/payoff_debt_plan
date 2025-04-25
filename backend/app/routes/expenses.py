@@ -73,6 +73,27 @@ async def create_expense(
     if expense.balance_type == "credit_card" and not expense.credit_card_id:
         raise HTTPException(status_code=400, detail="Credit card ID is required for credit card expenses")
     
+    # If it's a credit card expense, update the card's balance
+    updated_card = None
+    if expense.balance_type == "credit_card" and expense.credit_card_id:
+        card = db.query(CreditCard).filter(
+            CreditCard.id == expense.credit_card_id,
+            CreditCard.user_id == current_user.id
+        ).first()
+        if card:
+            # Convert expense amount to float before addition
+            expense_amount = float(expense.amount)
+            card.balance += expense_amount
+            db.add(card)
+            db.flush()  # Flush to get the updated card data
+            updated_card = {
+                "id": card.id,
+                "name": card.name,
+                "balance": card.balance,
+                "interest_rate": card.interest_rate,
+                "min_payment": card.min_payment
+            }
+    
     db_expense = Expense(
         description=expense.description,
         amount=expense.amount,
@@ -83,7 +104,19 @@ async def create_expense(
     db.add(db_expense)
     db.commit()
     db.refresh(db_expense)
-    return db_expense
+    
+    # Get current balance (only for cash expenses)
+    user_balance = db.query(UserBalance).filter(UserBalance.user_id == current_user.id).first()
+    initial_balance = user_balance.balance if user_balance else Decimal("0")
+    expenses = db.query(Expense).filter(Expense.user_id == current_user.id).all()
+    total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
+    current_balance = initial_balance - total_expenses
+    
+    return {
+        "expense": db_expense,
+        "currentBalance": current_balance,
+        "updatedCard": updated_card
+    }
 
 @router.delete("/{expense_id}")
 async def delete_expense(
