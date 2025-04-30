@@ -217,7 +217,7 @@ export default function ExpenseAnalyticsPage() {
                     
                     <YAxis 
                       tickFormatter={(value) => `$${value}`}
-                      domain={[0, dataMax => Math.ceil(dataMax * 1.1)]}
+                      domain={[0, (dataMax: number) => Math.ceil(dataMax * 1.1)]}
                       tick={{ fill: '#64748b', fontSize: 12 }}
                       stroke="#94a3b8"
                       axisLine={true}
