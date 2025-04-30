@@ -23,6 +23,7 @@ const Layout: React.FC<LayoutProps> = ({
     { name: 'Payment History', href: '/payments' },
     { name: 'Add Payment', href: '/payments/add' },
     { name: 'Expenses', href: '/expenses' },
+    { name: 'Expense Analytics', href: '/expenses/analytics' },
   ];
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import api from '@/lib/api';
+import Link from 'next/link';
 
 interface Expense {
   id?: number;
@@ -132,8 +133,10 @@ export default function ExpensesPage() {
         );
       }
       
-      // Update the expenses list by adding the new expense
-      setExpenses(prevExpenses => [...prevExpenses, response.expense]);
+      // Update the expenses list and recalculate totals
+      const updatedExpenses = [...expenses, response.expense];
+      setExpenses(updatedExpenses);
+      calculateTotals(updatedExpenses);
       
       // Update the current balance
       setCurrentBalance(response.currentBalance);
@@ -160,10 +163,14 @@ export default function ExpensesPage() {
       const response = await api.deleteExpense(id);
       if (response.message === "Expense deleted successfully") {
         // Update expenses list by removing the deleted expense
-        setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
+        const updatedExpenses = expenses.filter(expense => expense.id !== id);
+        setExpenses(updatedExpenses);
         
         // Update the current balance
         setCurrentBalance(response.currentBalance);
+        
+        // Recalculate monthly and weekly totals with the updated expenses
+        calculateTotals(updatedExpenses);
         
         // Update credit cards if necessary
         if (response.updatedCard) {
@@ -296,6 +303,15 @@ export default function ExpensesPage() {
                 Total paid to credit cards
               </p>
             </div>
+          </div>
+
+          <div className="flex justify-end mb-6">
+            <Link 
+              href="/expenses/analytics" 
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              View Detailed Analytics →
+            </Link>
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
