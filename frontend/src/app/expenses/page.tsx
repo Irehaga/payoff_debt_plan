@@ -132,6 +132,13 @@ export default function ExpensesPage() {
         );
       }
       
+      // Update the expenses list by adding the new expense
+      setExpenses(prevExpenses => [...prevExpenses, response.expense]);
+      
+      // Update the current balance
+      setCurrentBalance(response.currentBalance);
+      
+      // Reset the form
       setNewExpense({
         description: '',
         amount: '',
@@ -139,8 +146,9 @@ export default function ExpensesPage() {
         credit_card_id: undefined,
         balance_type: 'cash'
       });
-      setCurrentBalance(response.currentBalance);
-      fetchExpenses();
+      
+      // Clear any previous errors
+      setError(null);
     } catch (err) {
       setError('Failed to add expense');
       console.error(err);
@@ -151,8 +159,13 @@ export default function ExpensesPage() {
     try {
       const response = await api.deleteExpense(id);
       if (response.message === "Expense deleted successfully") {
+        // Update expenses list by removing the deleted expense
+        setExpenses(prevExpenses => prevExpenses.filter(expense => expense.id !== id));
+        
+        // Update the current balance
         setCurrentBalance(response.currentBalance);
-        // Update the credit cards list with the new balance if a card was updated
+        
+        // Update credit cards if necessary
         if (response.updatedCard) {
           setCreditCards(prevCards => 
             prevCards.map(card => 
@@ -160,7 +173,9 @@ export default function ExpensesPage() {
             )
           );
         }
-        fetchExpenses();
+        
+        // Clear any previous errors
+        setError(null);
       } else {
         setError('Failed to delete expense: Unexpected response');
       }
