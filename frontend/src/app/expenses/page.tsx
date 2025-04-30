@@ -53,6 +53,8 @@ export default function ExpensesPage() {
     amount: '',
     type: 'add'
   });
+  const [creditCardMonthlyTotal, setCreditCardMonthlyTotal] = useState<number>(0);
+  const [creditCardWeeklyTotal, setCreditCardWeeklyTotal] = useState<number>(0);
 
   const fetchExpenses = useCallback(async () => {
     try {
@@ -91,26 +93,51 @@ export default function ExpensesPage() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - now.getDay()); // Start of current week (Sunday)
+    startOfWeek.setDate(now.getDate() - now.getDay());
 
-    const monthlyExpenses = expenses.filter(expense => {
+    // Separate cash and credit card expenses
+    const cashExpenses = expenses.filter(expense => !expense.credit_card_id);
+    const creditCardExpenses = expenses.filter(expense => expense.credit_card_id);
+
+    // Calculate cash totals
+    const monthlyCashExpenses = cashExpenses.filter(expense => {
       const expenseDate = new Date(expense.date);
       return expenseDate >= startOfMonth;
     });
 
-    const weeklyExpenses = expenses.filter(expense => {
+    const weeklyCashExpenses = cashExpenses.filter(expense => {
       const expenseDate = new Date(expense.date);
       return expenseDate >= startOfWeek;
     });
 
-    const monthlyTotal = monthlyExpenses.reduce((sum, expense) => 
+    const monthlyTotal = monthlyCashExpenses.reduce((sum, expense) => 
       sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
     
-    const weeklyTotal = weeklyExpenses.reduce((sum, expense) => 
+    const weeklyTotal = weeklyCashExpenses.reduce((sum, expense) => 
       sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
 
+    // Calculate credit card totals
+    const monthlyCreditExpenses = creditCardExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfMonth;
+    });
+
+    const weeklyCreditExpenses = creditCardExpenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate >= startOfWeek;
+    });
+
+    const creditCardMonthlyTotal = monthlyCreditExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+    
+    const creditCardWeeklyTotal = weeklyCreditExpenses.reduce((sum, expense) => 
+      sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
+
+    // Update state
     setMonthlyTotal(monthlyTotal);
     setWeeklyTotal(weeklyTotal);
+    setCreditCardMonthlyTotal(creditCardMonthlyTotal);
+    setCreditCardWeeklyTotal(creditCardWeeklyTotal);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,7 +240,7 @@ export default function ExpensesPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="max-w-4xl mx-auto p-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <h2 className="text-2xl font-bold mb-4">Update Balance</h2>
             <form onSubmit={handleBalanceUpdate} className="space-y-4">
@@ -275,23 +302,66 @@ export default function ExpensesPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {/* Cash Expenses */}
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Monthly Expenses</h2>
-              <p className="text-2xl font-semibold text-red-600">
+              <h2 className="text-xl font-bold mb-4">Monthly Cash</h2>
+              <p className="text-2xl font-semibold text-blue-600">
                 ${monthlyTotal.toFixed(2)}
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Total expenses for {new Date().toLocaleString('default', { month: 'long' })}
+                Cash expenses this month
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-bold mb-4">Weekly Expenses</h2>
-              <p className="text-2xl font-semibold text-red-600">
+              <h2 className="text-xl font-bold mb-4">Weekly Cash</h2>
+              <p className="text-2xl font-semibold text-blue-600">
                 ${weeklyTotal.toFixed(2)}
               </p>
               <p className="text-sm text-gray-500 mt-2">
-                Total expenses for this week
+                Cash expenses this week
+              </p>
+            </div>
+
+            {/* Credit Card Expenses */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Monthly Credit</h2>
+              <p className="text-2xl font-semibold text-purple-600">
+                ${creditCardMonthlyTotal.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Credit card expenses this month
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Weekly Credit</h2>
+              <p className="text-2xl font-semibold text-purple-600">
+                ${creditCardWeeklyTotal.toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Credit card expenses this week
+              </p>
+            </div>
+          </div>
+
+          {/* Total Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Total Monthly Expenses</h2>
+              <p className="text-2xl font-semibold text-gray-800">
+                ${(monthlyTotal + creditCardMonthlyTotal).toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Combined expenses this month
+              </p>
+            </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-bold mb-4">Total Weekly Expenses</h2>
+              <p className="text-2xl font-semibold text-gray-800">
+                ${(weeklyTotal + creditCardWeeklyTotal).toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Combined expenses this week
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6">
@@ -425,7 +495,7 @@ export default function ExpensesPage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {expense.credit_card ? 
                             `${expense.credit_card.name} ($${expense.credit_card.balance.toFixed(2)})`
-                            : 'No Card'
+                            : 'Cash'
                           }
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

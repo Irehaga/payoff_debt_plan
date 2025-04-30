@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, AreaChart, Area, ReferenceLine } from 'recharts';
 import api from '@/lib/api';
 import { Expense } from '@/lib/types';
 
@@ -28,15 +28,27 @@ export default function ExpenseAnalyticsPage() {
     fetchExpenses();
   }, []);
 
-  // Calculate weekly data for the past 52 weeks
+  // Calculate weekly data for the current year
   const weeklyData = useMemo(() => {
     const now = new Date();
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(now.getFullYear() - 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    
+    const currentYearExpenses = expenses.filter(expense => {
+      const expenseDate = new Date(expense.date);
+      return expenseDate.getFullYear() === now.getFullYear();
+    });
 
-    // Create array of weeks
+    if (currentYearExpenses.length === 0) {
+      return [];
+    }
+
+    const earliestExpenseDate = new Date(Math.min(
+      ...currentYearExpenses.map(expense => new Date(expense.date).getTime())
+    ));
+
     const weeks: { start: Date; end: Date }[] = [];
-    let currentWeekStart = new Date(oneYearAgo);
+    let currentWeekStart = new Date(earliestExpenseDate);
+    currentWeekStart.setDate(currentWeekStart.getDate() - currentWeekStart.getDay());
     
     while (currentWeekStart <= now) {
       const weekEnd = new Date(currentWeekStart);
@@ -49,7 +61,7 @@ export default function ExpenseAnalyticsPage() {
     }
 
     return weeks.map(week => {
-      const weekExpenses = expenses.filter(expense => {
+      const weekExpenses = currentYearExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= week.start && expenseDate <= week.end;
       });
@@ -57,25 +69,32 @@ export default function ExpenseAnalyticsPage() {
       const total = weekExpenses.reduce((sum, expense) => 
         sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
 
+      // Format the date range
+      const startStr = week.start.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+      });
+      const endStr = week.end.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric'
+      });
+
       return {
-        date: `${week.start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${week.end.toLocaleDateString('en-US', { day: 'numeric' })}`,
+        date: `${startStr} - ${endStr}`, // Now shows start and end dates
         total
       };
-    });
+    }).filter(week => week.total > 0);
   }, [expenses]);
 
-  // Calculate monthly data for the past 12 months
+  // Calculate monthly data for the current year
   const monthlyData = useMemo(() => {
     const now = new Date();
+    const currentYear = now.getFullYear();
     const months: { month: number; year: number }[] = [];
     
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now);
-      date.setMonth(now.getMonth() - i);
-      months.push({
-        month: date.getMonth(),
-        year: date.getFullYear()
-      });
+    // Create array for all months in current year up to current month
+    for (let month = 0; month <= now.getMonth(); month++) {
+      months.push({ month, year: currentYear });
     }
 
     return months.map(({ month, year }) => {
@@ -88,7 +107,7 @@ export default function ExpenseAnalyticsPage() {
         sum + (typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount)), 0);
 
       return {
-        date: new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        date: new Date(year, month).toLocaleDateString('en-US', { month: 'long' }),
         total
       };
     });
@@ -124,11 +143,11 @@ export default function ExpenseAnalyticsPage() {
     <ProtectedRoute>
       <Layout>
         <div className="max-w-7xl mx-auto p-6">
-          <h1 className="text-3xl font-bold mb-8">Expense Analytics</h1>
+          <h1 className="text-3xl font-bold mb-8">Expense Analytics {new Date().getFullYear()}</h1>
 
           {/* Monthly Spending Chart */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-6">Monthly Spending (Past Year)</h2>
+            <h2 className="text-2xl font-bold mb-6">Monthly Spending</h2>
             <div className="h-96">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={monthlyData}>
@@ -137,12 +156,12 @@ export default function ExpenseAnalyticsPage() {
                     dataKey="date"
                     angle={-45}
                     textAnchor="end"
-                    height={80}
+                    height={60}
                   />
                   <YAxis tickFormatter={(value) => `$${value}`} />
                   <Tooltip 
                     formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Total Spent']}
-                    labelFormatter={(label) => `Month: ${label}`}
+                    labelFormatter={(label) => label}
                   />
                   <Legend />
                   <Bar 
@@ -157,34 +176,97 @@ export default function ExpenseAnalyticsPage() {
 
           {/* Weekly Spending Chart */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-bold mb-6">Weekly Spending (Past Year)</h2>
-            <div className="h-96">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={weeklyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="date"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={3}  // Show every 4th label to prevent overcrowding
-                  />
-                  <YAxis tickFormatter={(value) => `$${value}`} />
-                  <Tooltip 
-                    formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Total Spent']}
-                    labelFormatter={(label) => `Week: ${label}`}
-                  />
-                  <Legend />
-                  <Line 
-                    type="monotone" 
-                    dataKey="total" 
-                    stroke="#3b82f6" 
-                    name="Weekly Spending"
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            <h2 className="text-2xl font-bold mb-6">Weekly Spending</h2>
+            {weeklyData.length > 0 ? (
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart 
+                    data={weeklyData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 65 }}
+                  >
+                    {/* Add a light background */}
+                    <defs>
+                      <linearGradient id="chartBackground" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f8fafc" stopOpacity={0.8}/>
+                        <stop offset="95%" stopColor="#f1f5f9" stopOpacity={0.8}/>
+                      </linearGradient>
+                    </defs>
+                    
+                    {/* Background rectangle */}
+                    <rect x="0" y="0" width="100%" height="100%" fill="url(#chartBackground)" />
+                    
+                    {/* Make grid more visible */}
+                    <CartesianGrid 
+                      strokeDasharray="3 3" 
+                      stroke="#cbd5e1" 
+                      opacity={0.8}
+                      vertical={true}
+                      horizontal={true}
+                    />
+                    
+                    <XAxis 
+                      dataKey="date"
+                      angle={-45}
+                      textAnchor="end"
+                      height={60}
+                      interval={0}
+                      padding={{ left: 50, right: 50 }}
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      stroke="#94a3b8"
+                    />
+                    
+                    <YAxis 
+                      tickFormatter={(value) => `$${value}`}
+                      domain={[0, dataMax => Math.ceil(dataMax * 1.1)]}
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      stroke="#94a3b8"
+                      axisLine={true}
+                      tickLine={true}
+                    />
+                    
+                    <Tooltip 
+                      formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Total Spent']}
+                      labelFormatter={(label) => `Week of ${label}`}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '6px',
+                        padding: '12px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                      cursor={{ stroke: '#3b82f6', strokeWidth: 1, strokeDasharray: '5 5' }}
+                    />
+                    
+                    <Line 
+                      type="linear"
+                      dataKey="total" 
+                      stroke="#3b82f6"
+                      strokeWidth={3}
+                      dot={{
+                        stroke: '#3b82f6',
+                        strokeWidth: 2,
+                        fill: '#ffffff',
+                        r: 4
+                      }}
+                      activeDot={{
+                        stroke: '#3b82f6',
+                        strokeWidth: 2,
+                        fill: '#3b82f6',
+                        r: 6
+                      }}
+                      name="Weekly Spending"
+                    />
+                    
+                    {/* Add a reference line for zero */}
+                    <ReferenceLine y={0} stroke="#94a3b8" strokeWidth={1} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                No weekly spending data available for {new Date().getFullYear()}
+              </div>
+            )}
           </div>
 
           {/* Summary Statistics */}
@@ -192,19 +274,38 @@ export default function ExpenseAnalyticsPage() {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold mb-2">Average Monthly Spending</h3>
               <p className="text-3xl font-bold text-blue-600">
-                ${(monthlyData.reduce((sum, month) => sum + month.total, 0) / monthlyData.length).toFixed(2)}
+                ${(() => {
+                  const monthsWithExpenses = monthlyData.filter(month => month.total > 0);
+                  if (monthsWithExpenses.length === 0) return '0.00';
+                  return (monthsWithExpenses.reduce((sum, month) => sum + month.total, 0) / 
+                    monthsWithExpenses.length).toFixed(2);
+                })()}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Average for {new Date().getFullYear()}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold mb-2">Average Weekly Spending</h3>
               <p className="text-3xl font-bold text-blue-600">
-                ${(weeklyData.reduce((sum, week) => sum + week.total, 0) / weeklyData.length).toFixed(2)}
+                ${(() => {
+                  const weeksWithExpenses = weeklyData.filter(week => week.total > 0);
+                  if (weeksWithExpenses.length === 0) return '0.00';
+                  return (weeksWithExpenses.reduce((sum, week) => sum + week.total, 0) / 
+                    weeksWithExpenses.length).toFixed(2);
+                })()}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Average for {new Date().getFullYear()}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow-md p-6">
               <h3 className="text-lg font-semibold mb-2">Total Year Spending</h3>
               <p className="text-3xl font-bold text-blue-600">
                 ${monthlyData.reduce((sum, month) => sum + month.total, 0).toFixed(2)}
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Total for {new Date().getFullYear()}
               </p>
             </div>
           </div>

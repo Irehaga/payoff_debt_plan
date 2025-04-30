@@ -61,7 +61,8 @@ async def get_user_expenses(
                 "amount": expense.amount,
                 "date": expense.date.isoformat(),
                 "credit_card_id": expense.credit_card_id,
-                "credit_card": card_map.get(expense.credit_card_id) if expense.credit_card_id else None
+                "credit_card": card_map.get(expense.credit_card_id) if expense.credit_card_id else None,
+                "balance_type": "credit_card" if expense.credit_card_id else "cash"
             }
             for expense in expenses
         ],
@@ -116,8 +117,19 @@ async def create_expense(
     total_expenses = sum(expense.amount for expense in expenses if expense.credit_card_id is None)
     current_balance = initial_balance - total_expenses
     
+    # Create the expense response with balance_type
+    expense_response = {
+        "id": db_expense.id,
+        "description": db_expense.description,
+        "amount": db_expense.amount,
+        "date": db_expense.date.isoformat(),
+        "credit_card_id": db_expense.credit_card_id,
+        "credit_card": updated_card if updated_card else None,
+        "balance_type": expense.balance_type
+    }
+    
     return {
-        "expense": db_expense,
+        "expense": expense_response,
         "currentBalance": current_balance,
         "updatedCard": updated_card
     }
